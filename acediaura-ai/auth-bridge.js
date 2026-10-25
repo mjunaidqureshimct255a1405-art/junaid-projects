@@ -21,7 +21,7 @@ function showSignout(){
 window.authSubmit=async()=>{
  if(!client){report('Account service is not connected.');return}
  const email=$('authEmail')?.value.trim(),password=$('authPassword')?.value||'';
- const name=inp.value.trim(),signUp=window.authCurrent==='signup';
+ const name=inp.value.trim(),signUp=document.getElementById('authTabSignup')?.classList.contains('on');
  if(!email||!password||signUp&&!name){report('Fill in all required fields.');return}
  report('Checking your account…');
  try{
