@@ -159,4 +159,4 @@ function authMode(mode){authCurrent=mode;document.getElementById('authTabLogin')
 function authSubmit(){document.getElementById('authPassword').value='';document.getElementById('authStatus').textContent='Secure '+(authCurrent==='login'?'login':'registration')+' is not available yet. The database and authentication service must be connected first.'}
 function demoEntry(){document.getElementById('authGate').classList.add('closed');document.getElementById('authPassword').value='';sessionStorage.setItem('acediaura_demo_entered','yes');window.scrollTo({top:0,behavior:'smooth'})}
 if(sessionStorage.getItem('acediaura_demo_entered')==='yes')document.getElementById('authGate').classList.add('closed');
-</script></body></html>
+</script><script type="module" src="/auth-bridge.js"></script></body></html>
