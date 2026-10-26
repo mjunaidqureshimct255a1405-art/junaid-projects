@@ -26,6 +26,7 @@ function showSignout(){
      const result=await client.signOut();
      if(result?.error)throw new Error(result.error.message||'Sign out failed');
      b.style.display='none';b.textContent='Log out';
+     $('authEmail').value='';$('authPassword').value='';inp.value='';
      gate?.classList.remove('closed');window.authMode('login');
      report('Signed out successfully.');
    }catch(e){report(e.message||'Sign out failed');b.textContent='Log out'}
