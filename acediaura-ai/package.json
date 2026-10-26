@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@neondatabase/auth": "0.7.0-beta"
+    "@neondatabase/auth": "latest"
   },
   "devDependencies": {
     "vite": "^6.0.0"
