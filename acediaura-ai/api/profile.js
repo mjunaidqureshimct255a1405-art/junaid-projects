@@ -1,0 +1,49 @@
+import { neon } from '@neondatabase/serverless';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+const dbUrl = process.env.DATABASE_URL;
+const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
+const issuer = process.env.NEON_AUTH_BASE_URL;
+const keys = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
+
+export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
+  if (!dbUrl || !keys || !issuer) return res.status(503).json({ error: 'Cloud profile backend not configured.' });
+  if (!['GET','PUT'].includes(req.method)) {
+    res.setHeader('Allow','GET, PUT');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) return res.status(401).json({ error:'Sign in required' });
+  let owner;
+  try {
+    const { payload } = await jwtVerify(header.slice(7), keys, { issuer });
+    owner = payload.sub;
+    if (!owner || typeof owner !== 'string') throw new Error('No identity');
+  } catch {
+    return res.status(401).json({ error:'Invalid or expired session token' });
+  }
+  try {
+    const sql = neon(dbUrl);
+    if (req.method === 'GET') {
+      const rows = await sql`SELECT user_id, full_name, college, branch, current_semester, about, updated_at
+                             FROM public.student_profiles WHERE user_id = ${owner} LIMIT 1`;
+      return res.status(200).json({ profile: rows[0] || null });
+    }
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    if (!body || typeof body !== 'object') return res.status(400).json({ error: 'Invalid profile' });
+    const val = (key,max) => typeof body[key] === 'string' ? body[key].trim().slice(0,max) : '';
+    const fullName = val('full_name',120), college=val('college',180),branch=val('branch',120),about=val('about',2000);
+    const semester = Number.isInteger(body.current_semester) && body.current_semester >= 1 && body.current_semester <= 12
+      ? body.current_semester : null;
+    const rows = await sql`INSERT INTO public.student_profiles (user_id, full_name, college, branch, current_semester, about, updated_at)
+      VALUES (${owner},${fullName},${college},${branch},${semester},${about},NOW())
+      ON CONFLICT (user_id) DO UPDATE SET full_name=EXCLUDED.full_name, college=EXCLUDED.college,
+       branch=EXCLUDED.branch, current_semester=EXCLUDED.current_semester, about=EXCLUDED.about, updated_at=NOW()
+      RETURNING user_id, full_name, college, branch, current_semester, about, updated_at`;
+    return res.status(200).json({profile:rows[0]});
+  } catch (error) {
+    console.error('Profile API operation failed:', error?.code || 'internal');
+    return res.status(500).json({ error:'Cloud profile request failed' });
+  }
+}
