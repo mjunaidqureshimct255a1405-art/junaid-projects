@@ -17,10 +17,22 @@ const previousMode=window.authMode;
 window.authMode=function(mode){previousMode?.(mode);nameWrapper.style.display=mode==='signup'?'flex':'none'};
 function hideGate(){gate?.classList.add('closed');$('authPassword').value='';sessionStorage.removeItem('acediaura_demo_entered')}
 function showSignout(){
-  if($('studentSignout'))return;
-  const b=document.createElement('button');b.id='studentSignout';b.textContent='Sign out';b.className='btn alt';b.onclick=async()=>{try{await client.signOut();gate?.classList.remove('closed');b.remove();report('Signed out successfully.')}catch(e){report(e.message||'Sign out failed')}};
-  (document.querySelector('.nav')||document.querySelector('header')||document.body).appendChild(b);
+ const b=$('studentSignout');
+ if(!b)return;
+ b.style.display='inline-flex';
+ b.onclick=async()=>{
+   b.disabled=true;b.textContent='Signing out…';
+   try{
+     const result=await client.signOut();
+     if(result?.error)throw new Error(result.error.message||'Sign out failed');
+     b.style.display='none';b.textContent='Log out';
+     gate?.classList.remove('closed');window.authMode('login');
+     report('Signed out successfully.');
+   }catch(e){report(e.message||'Sign out failed');b.textContent='Log out'}
+   finally{b.disabled=false}
+ };
 }
+
 window.authSubmit=async()=>{
  if(!client){report('Account service is not connected.');return}
  const email=$('authEmail')?.value.trim(),password=$('authPassword')?.value||'';
