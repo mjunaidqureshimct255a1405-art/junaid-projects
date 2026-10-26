@@ -2,6 +2,9 @@ import { createAuthClient } from '@neondatabase/auth';
 const authURL=import.meta.env.VITE_NEON_AUTH_URL;
 const $=(id)=>document.getElementById(id);
 const gate=$('authGate'),status=$('authStatus');
+// Legacy demo access must not hide the real login screen on future visits.
+sessionStorage.removeItem('acediaura_demo_entered');
+gate?.classList.remove('closed');
 let client;
 function report(message){if(status) status.textContent=message}
 if(authURL && /^https:\/\//.test(authURL)){client=createAuthClient(authURL)} else {report('Student accounts are not configured yet. You can explore the demo.')}
@@ -33,4 +36,4 @@ window.authSubmit=async()=>{
   else {report(signUp?'Account created. Please select Log in and sign in to activate your session.':'Login request completed, but no active session was found. Check email verification and browser cookie settings.'); if(signUp) window.authMode('login')}
  }catch(e){report('Could not sign in: '+(e.message||'network error'))}
 };
-if(client){client.getSession().then(s=>{if(s.data?.user){hideGate();showSignout()}else if(s.error){report('Session check: '+s.error.message)} }).catch(()=>report('Could not check your session. Please log in.'))}
+if(client){client.getSession().then(s=>{if(s.data?.user){hideGate();showSignout()}else {gate?.classList.remove('closed');if(s.error)report('Session check: '+s.error.message)} }).catch(()=>{gate?.classList.remove('closed');report('Could not check your session. Please log in.')})}
