@@ -16,7 +16,7 @@ function hideGate(){gate?.classList.add('closed');$('authPassword').value='';ses
 function showSignout(){
   if($('studentSignout'))return;
   const b=document.createElement('button');b.id='studentSignout';b.textContent='Sign out';b.className='btn alt';b.onclick=async()=>{try{await client.signOut();gate?.classList.remove('closed');b.remove();report('Signed out successfully.')}catch(e){report(e.message||'Sign out failed')}};
-  document.querySelector('.nav')?.appendChild(b);
+  (document.querySelector('.nav')||document.querySelector('header')||document.body).appendChild(b);
 }
 window.authSubmit=async()=>{
  if(!client){report('Account service is not connected.');return}
@@ -30,7 +30,7 @@ window.authSubmit=async()=>{
   if(answer.error){report(answer.error.message||'Authentication was unsuccessful.');return}
   const session=await client.getSession();
   if(session.data?.user){hideGate();showSignout()}
-  else report('Please complete email verification if required, then sign in.');
+  else {report(signUp?'Account created. Please select Log in and sign in to activate your session.':'Login request completed, but no active session was found. Check email verification and browser cookie settings.'); if(signUp) window.authMode('login')}
  }catch(e){report('Could not sign in: '+(e.message||'network error'))}
 };
-if(client){client.getSession().then(s=>{if(s.data?.user){hideGate();showSignout()}}).catch(()=>report('Could not check your session.'))}
+if(client){client.getSession().then(s=>{if(s.data?.user){hideGate();showSignout()}else if(s.error){report('Session check: '+s.error.message)} }).catch(()=>report('Could not check your session. Please log in.'))}
