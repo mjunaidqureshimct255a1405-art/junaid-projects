@@ -51,4 +51,30 @@ window.authSubmit=async()=>{
   else {report(signUp?'Account created. Please select Log in and sign in to activate your session.':'Login request completed, but no active session was found. Check email verification and browser cookie settings.'); if(signUp) window.authMode('login')}
  }catch(e){report('Could not sign in: '+(e.message||'network error'))}
 };
-if(client){client.getSession().then(async s=>{if(s.data?.user){hideGate();showSignout();await window.acediauraSetCloudSession?.(await client.getJWTToken())}else {gate?.classList.remove('closed');if(s.error)report('Session check: '+s.error.message)} }).catch(()=>{gate?.classList.remove('closed');report('Could not check your session. Please log in.')})}
+
+async function restoreSession(){
+ if(!client)return;
+ try{
+  const result=await client.getSession();
+  if(result.data?.user){
+   hideGate();showSignout();
+   try{
+    const token=await client.getJWTToken();
+    if(token) await window.acediauraSetCloudSession?.(token);
+    else report('Signed in, but cloud token unavailable. Please refresh or sign in again.');
+   }catch(e){report('Signed in, but cloud syncing is unavailable.')}
+  }else{
+   gate?.classList.remove('closed');
+   const logout=$('studentSignout');if(logout)logout.style.display='none';
+   if(result.error)report('Session could not be restored: '+result.error.message);
+  }
+ }catch(e){
+  gate?.classList.remove('closed');
+  report('Session check failed. Browser cookies may be restricted. Sign in again.');
+ }
+}
+if(client){
+ restoreSession();
+ window.addEventListener('pageshow',event=>{if(event.persisted)restoreSession()});
+ document.addEventListener('visibilitychange',()=>{if(!document.hidden)restoreSession()});
+}
