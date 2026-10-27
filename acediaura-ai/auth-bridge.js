@@ -16,6 +16,18 @@ const inp=document.createElement('input');inp.id='studentName';inp.placeholder='
 $('authEmail')?.closest('label')?.before(nameWrapper);
 const previousMode=window.authMode;
 window.authMode=function(mode){previousMode?.(mode);nameWrapper.style.display=mode==='signup'?'flex':'none'};
+async function getCloudToken(){
+  if(typeof client.token==='function'){
+    const response=await client.token();
+    const token=response?.data?.token||response?.token;
+    if(typeof token==='string'&&token.split('.').length===3)return token;
+  }
+  if(typeof client.getJWTToken==='function'){
+    const token=await client.getJWTToken();
+    if(typeof token==='string'&&token.split('.').length===3)return token;
+  }
+  return null;
+}
 function hideGate(){gate?.classList.add('closed');$('authPassword').value='';sessionStorage.removeItem('acediaura_demo_entered')}
 function showSignout(){
  const b=$('studentSignout');
@@ -47,7 +59,7 @@ window.authSubmit=async()=>{
   $('authPassword').value='';
   if(answer.error){report(answer.error.message||'Authentication was unsuccessful.');return}
   const session=await client.getSession();
-  if(session.data?.user){hideGate();showSignout();await window.acediauraSetCloudSession?.(await client.getJWTToken())}
+  if(session.data?.user){hideGate();showSignout();const jwt=await getCloudToken();await window.acediauraSetCloudSession?.(jwt);if(!jwt)report('Logged in. Profile cloud token unavailable.')}
   else {report(signUp?'Account created. Please select Log in and sign in to activate your session.':'Login request completed, but no active session was found. Check email verification and browser cookie settings.'); if(signUp) window.authMode('login')}
  }catch(e){report('Could not sign in: '+(e.message||'network error'))}
 };
@@ -59,7 +71,7 @@ async function restoreSession(){
   if(result.data?.user){
    hideGate();showSignout();
    try{
-    const token=await client.getJWTToken();
+    const token=await getCloudToken();
     if(token) await window.acediauraSetCloudSession?.(token);
     else report('Signed in, but cloud token unavailable. Please refresh or sign in again.');
    }catch(e){report('Signed in, but cloud syncing is unavailable.')}
