@@ -1,3 +1,4 @@
+import './cloud-profile.js';
 import { createAuthClient } from '@neondatabase/auth';
 const authURL=import.meta.env.VITE_NEON_AUTH_URL;
 const $=(id)=>document.getElementById(id);
@@ -26,6 +27,7 @@ function showSignout(){
      const result=await client.signOut();
      if(result?.error)throw new Error(result.error.message||'Sign out failed');
      b.style.display='none';b.textContent='Log out';
+     window.acediauraClearCloudSession?.();
      $('authEmail').value='';$('authPassword').value='';inp.value='';
      gate?.classList.remove('closed');window.authMode('login');
      report('Signed out successfully.');
@@ -45,8 +47,8 @@ window.authSubmit=async()=>{
   $('authPassword').value='';
   if(answer.error){report(answer.error.message||'Authentication was unsuccessful.');return}
   const session=await client.getSession();
-  if(session.data?.user){hideGate();showSignout()}
+  if(session.data?.user){hideGate();showSignout();await window.acediauraSetCloudSession?.(session.data?.session?.access_token||session.data?.session?.accessToken)}
   else {report(signUp?'Account created. Please select Log in and sign in to activate your session.':'Login request completed, but no active session was found. Check email verification and browser cookie settings.'); if(signUp) window.authMode('login')}
  }catch(e){report('Could not sign in: '+(e.message||'network error'))}
 };
-if(client){client.getSession().then(s=>{if(s.data?.user){hideGate();showSignout()}else {gate?.classList.remove('closed');if(s.error)report('Session check: '+s.error.message)} }).catch(()=>{gate?.classList.remove('closed');report('Could not check your session. Please log in.')})}
+if(client){client.getSession().then(async s=>{if(s.data?.user){hideGate();showSignout();await window.acediauraSetCloudSession?.(s.data?.session?.access_token||s.data?.session?.accessToken)}else {gate?.classList.remove('closed');if(s.error)report('Session check: '+s.error.message)} }).catch(()=>{gate?.classList.remove('closed');report('Could not check your session. Please log in.')})}
