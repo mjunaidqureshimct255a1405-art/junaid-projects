@@ -30,6 +30,8 @@ export default async function handler(req,res){
  try{const decoded=await jwtVerify(auth.slice(7),keys,{issuer});owner=decoded.payload.sub;if(typeof owner!=='string'||!owner)throw Error('no owner')}
  catch{return res.status(401).json({error:'Invalid cloud session'});}
  try{
+  await sql`CREATE TABLE IF NOT EXISTS public.student_workspaces (user_id text PRIMARY KEY, content jsonb NOT NULL DEFAULT '{}'::jsonb, updated_at timestamptz NOT NULL DEFAULT now())`;
+  await sql`ALTER TABLE public.student_workspaces ENABLE ROW LEVEL SECURITY`;
   if(req.method==='GET'){
    const rows=await sql`SELECT content, updated_at FROM public.student_workspaces WHERE user_id=${owner} LIMIT 1`;
    return res.status(200).json({workspace:rows[0]?.content||null,updated_at:rows[0]?.updated_at||null});
@@ -45,7 +47,7 @@ export default async function handler(req,res){
   return res.status(200).json({saved:true,updated_at:rows[0].updated_at});
  }catch(e){
   console.error('Workspace request error',e?.code||'unknown');
-  if(e?.code==='42P01')return res.status(503).json({error:'Run database migration 003_cloud_workspace.sql first'});
+  if(e?.code==='42501')return res.status(503).json({error:'Database owner permissions required to initialize workspace table.'});
   return res.status(500).json({error:'Workspace could not be stored securely'});
  }
 }
