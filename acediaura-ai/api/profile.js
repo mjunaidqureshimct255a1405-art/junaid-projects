@@ -3,7 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const dbUrl = process.env.DATABASE_URL;
 const jwksUrl = process.env.NEON_AUTH_JWKS_URL;
-const issuer = process.env.NEON_AUTH_BASE_URL;
+const issuer = process.env.NEON_AUTH_BASE_URL ? new URL(process.env.NEON_AUTH_BASE_URL).origin : null;
 const keys = jwksUrl ? createRemoteJWKSet(new URL(jwksUrl)) : null;
 
 export default async function handler(req, res) {
