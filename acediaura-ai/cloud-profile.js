@@ -76,7 +76,22 @@ function attachCloudButton(){
  const button=profilePanel.querySelector('button[onclick="saveProfile()"], button[onclick="window.acediauraSaveProfile()"]');
  if(button){button.setAttribute('onclick','window.acediauraSaveProfile()');button.textContent='Save profile to cloud';}
  if(button&&!profilePanel.querySelector('#cloudProfileFeedback')){const note=document.createElement('p');note.id='cloudProfileFeedback';note.setAttribute('role','status');note.className='notice';note.textContent=sessionToken?'Edit details and save to cloud.':'Sign in to save your profile.';button.parentNode.insertAdjacentElement('afterend',note)}
- const nameInput=profilePanel.querySelector('#name'),cgpaInput=profilePanel.querySelector('#cgpa');
+ const nameInput=profilePanel.querySelector('#name'),cgpaInput=profilePanel.querySelector('#cgpa'),historyInput=profilePanel.querySelector('#history');
+ if(historyInput&&!historyInput.dataset.liveChart){
+   historyInput.dataset.liveChart='1';
+   historyInput.addEventListener('input',()=>{
+     const raw=historyInput.value.trim();
+     const parts=raw?raw.split(/[,;\n]+/).map(v=>v.trim()).filter(Boolean):[];
+     const valid=parts.every(v=>Number.isFinite(Number(v))&&Number(v)>=0&&Number(v)<=10);
+     const values=valid?parts.map(Number):[];
+     const chart=document.getElementById('profchart');
+     const overview=document.getElementById('chart');
+     if(chart)chart.innerHTML=values.length?values.map((v,i)=>'<div style="height:'+Math.max(v*10,2)+'%"><b>'+v.toFixed(2)+'</b><small>S'+(i+1)+'</small></div>').join(''):'<p class="muted">'+(valid?'Enter previous semester SGPAs to see your graph.':'Use SGPA values between 0 and 10, separated by commas.')+'</p>';
+     if(overview)overview.innerHTML=values.length?values.map((v,i)=>'<div class="bar" style="height:'+Math.max(v*10,2)+'%"><span>'+v.toFixed(2)+'</span><label>S'+(i+1)+'</label></div>').join(''):'';
+     cloudStatus(valid?'Graph preview updated instantly. Save profile to keep it.':'Invalid SGPA entry. Use values from 0 to 10.');
+   });
+ }
+
  if(nameInput&&!nameInput.dataset.livePreview){nameInput.dataset.livePreview='1';nameInput.addEventListener('input',()=>{const name=document.getElementById('bigName');if(name)name.textContent=nameInput.value.trim()||'Your name';const heading=document.getElementById('profileText');if(heading)heading.textContent=nameInput.value.trim()||'Your name, your academic story.';cloudStatus('Preview only — press Save profile to cloud to persist changes.')})}
  if(cgpaInput&&!cgpaInput.dataset.livePreview){cgpaInput.dataset.livePreview='1';cgpaInput.addEventListener('input',()=>{const metric=document.querySelector('#profmetrics .profilemetric strong');if(metric)metric.textContent=cgpaInput.value||'—';cloudStatus('Preview only — press Save profile to cloud to persist changes.')})}
  let clear=profilePanel.querySelector('#clearCloudProfile');
