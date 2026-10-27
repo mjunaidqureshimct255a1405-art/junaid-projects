@@ -11,7 +11,7 @@ async function fetchProfile() {
     const j=await r.json();
     if(!r.ok){cloudStatus(j.error||'Cloud profile unavailable');return}
     if(j.profile){
-      data.profile={...data.profile,name:j.profile.full_name||'',bio:j.profile.about||''};
+      data.profile={name:j.profile.full_name||'',bio:j.profile.about||'',cgpa:j.profile.cgpa??'',history:j.profile.sgpa_history||'',photo:j.profile.photo_data||''};
       data.setup={...data.setup,college:j.profile.college||'',branch:j.profile.branch||'',sem:j.profile.current_semester||''};
       render();
       cloudStatus('Profile loaded from Neon cloud.');
@@ -20,6 +20,7 @@ async function fetchProfile() {
 }
 window.acediauraSetCloudSession=async(token)=>{
   sessionToken=typeof token==='string'&&token.length>50?token:null;
+  data.profile={}; data.setup={}; render();
   if(sessionToken) await fetchProfile();
 };
 window.acediauraClearCloudSession=()=>{
@@ -27,11 +28,12 @@ window.acediauraClearCloudSession=()=>{
 };
 window.acediauraSaveProfile=async()=>{
   if(!sessionToken){cloudStatus('Please log in to save your profile securely.');return}
-  const name=document.getElementById('name'),bio=document.getElementById('bio');
+  const name=document.getElementById('name'),bio=document.getElementById('bio'),cgpa=document.getElementById('cgpa'),history=document.getElementById('history');
   if(!name||!bio){cloudStatus('Open My Profile before saving.');return}
   const payload={
     full_name:name.value.trim(),
     about:bio.value.trim(),
+    cgpa:cgpa?.value||'',sgpa_history:history?.value||'',photo_data:data.profile.photo||'',
     college:String(data.setup.college||''),
     branch:String(data.setup.branch||''),
     current_semester:Number(data.setup.sem)||null
@@ -45,7 +47,7 @@ window.acediauraSaveProfile=async()=>{
     });
     const j=await r.json();
     if(!r.ok){cloudStatus('Not saved: '+(j.error||'cloud error'));return}
-    data.profile={...data.profile,name:j.profile.full_name,bio:j.profile.about};
+    data.profile={name:j.profile.full_name,bio:j.profile.about,cgpa:j.profile.cgpa??'',history:j.profile.sgpa_history||'',photo:j.profile.photo_data||''};
     render();cloudStatus('✓ Profile saved to Neon cloud.');
   }catch{cloudStatus('Cloud unavailable — profile was not saved.')}
 };
@@ -56,6 +58,8 @@ function attachCloudButton(){
  if(!profilePanel||typeof tab==='undefined'||tab!=='profile')return;
  const button=profilePanel.querySelector('button[onclick="saveProfile()"]');
  if(button){button.setAttribute('onclick','window.acediauraSaveProfile()');button.textContent='Save profile to cloud';}
+ let clear=profilePanel.querySelector('#clearCloudProfile');
+ if(button&&!clear){clear=document.createElement('button');clear.id='clearCloudProfile';clear.type='button';clear.className='btn alt';clear.textContent='Clear profile';clear.onclick=async()=>{if(!confirm('Clear your saved name, CGPA, bio, SGPA history and photo?'))return;const fields=['name','cgpa','history','bio'];fields.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});data.profile.photo='';await window.acediauraSaveProfile()};button.insertAdjacentElement('afterend',clear)}
  const notice=profilePanel.querySelector('.notice');
  if(notice&&notice.textContent.includes('Demo-only'))notice.textContent='Save your profile securely to your student account.';
 }
@@ -63,3 +67,17 @@ const cloudObserver=new MutationObserver(()=>attachCloudButton());
 const cloudPanel=document.getElementById('panel');
 if(cloudPanel)cloudObserver.observe(cloudPanel,{childList:true,subtree:false});
 attachCloudButton();
+
+// Upload is account-specific; save the selected photo only when Save Profile is pressed.
+window.upload=function(event){
+ const file=event.target.files?.[0];if(!file)return;
+ if(file.size>5*1024*1024){cloudStatus('Choose a photo under 5 MB');return}
+ const image=new Image(),reader=new FileReader();
+ reader.onload=()=>{image.onload=()=>{
+ const scale=Math.min(1,640/Math.max(image.width,image.height));
+ const canvas=document.createElement('canvas');canvas.width=Math.round(image.width*scale);canvas.height=Math.round(image.height*scale);
+ canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);
+ data.profile.photo=canvas.toDataURL('image/jpeg',0.68);
+ cloudStatus('New photo selected. Save profile to cloud to keep it.');
+ };image.src=reader.result};reader.readAsDataURL(file);
+};
