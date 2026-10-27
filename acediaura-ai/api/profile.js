@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   if (!header.startsWith('Bearer ')) return res.status(401).json({ error:'Sign in required' });
   let owner;
   try {
-    const { payload } = await jwtVerify(header.slice(7), keys);
+    const { payload } = await jwtVerify(header.slice(7), keys, { issuer });
     owner = payload.sub;
     if (!owner || typeof owner !== 'string') throw new Error('No identity');
   } catch {
