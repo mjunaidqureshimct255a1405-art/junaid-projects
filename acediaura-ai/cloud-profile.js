@@ -25,10 +25,10 @@ window.acediauraSetCloudSession=async(token)=>{
   if(nextToken===sessionToken)return;
   sessionToken=nextToken;
   data.profile={}; render();
-  if(sessionToken) await fetchProfile();
+  if(sessionToken){await window.acediauraRestoreWorkspace?.(sessionToken);await fetchProfile();}
 };
 window.acediauraClearCloudSession=()=>{
-  sessionToken=null; data=structuredClone(blank); render();
+  sessionToken=null;window.acediauraDisableWorkspace?.();data=structuredClone(blank); render();
 };
 window.acediauraSaveProfile=async()=>{
   if(!sessionToken){cloudStatus('Please log in to save your profile securely.');return}
@@ -57,6 +57,7 @@ window.acediauraSaveProfile=async()=>{
     const metric=document.querySelector('#profmetrics .profilemetric strong');if(metric)metric.textContent=data.profile.cgpa||'—';
     cloudStatus('✓ Saved to Neon cloud. Checking saved data…');
     await fetchProfile();
+    await window.acediauraSaveWorkspace?.();
   }catch{cloudStatus('Cloud unavailable — profile was not saved.')}
 };
 // The legacy inline HTML reassigns saveProfile several times. Route the
