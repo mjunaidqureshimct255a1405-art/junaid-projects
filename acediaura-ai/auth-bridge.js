@@ -8,7 +8,23 @@ const gate=$('authGate'),status=$('authStatus');
 sessionStorage.removeItem('acediaura_demo_entered');
 gate?.classList.remove('closed');
 let client;
-const tabSessionKey='acediaura_active_tab_session';
+const activityKey='acediaura_last_active_at';
+const timeoutMs=120000;
+let signingOut=false;
+const markActivity=()=>{if(!gate?.classList.contains('closed'))return;localStorage.setItem(activityKey,String(Date.now()))};
+async function expireIfIdle(){
+ if(signingOut||!client||!gate?.classList.contains('closed'))return;
+ const last=Number(localStorage.getItem(activityKey));
+ if(last&&Date.now()-last<timeoutMs)return;
+ signingOut=true;
+ gate.classList.remove('closed');
+ window.acediauraClearCloudSession?.();
+ const logout=$('studentSignout');if(logout)logout.style.display='none';
+ localStorage.removeItem(activityKey);
+ report('Your session expired after two minutes away. Sign in to resume your saved work.');
+ try{await client.signOut()}catch{}
+ signingOut=false;
+}
 function report(message){if(status) status.textContent=message}
 if(authURL && /^https:\/\//.test(authURL)){client=createAuthClient(authURL)} else {report('Student accounts are not configured yet. You can explore the demo.')}
 const nameWrapper=document.createElement('label');
@@ -30,7 +46,7 @@ async function getCloudToken(){
   }
   return null;
 }
-function hideGate(){sessionStorage.setItem(tabSessionKey,'active');gate?.classList.add('closed');$('authPassword').value='';sessionStorage.removeItem('acediaura_demo_entered')}
+function hideGate(){localStorage.setItem(activityKey,String(Date.now()));gate?.classList.add('closed');$('authPassword').value='';sessionStorage.removeItem('acediaura_demo_entered')}
 function showSignout(){
  const b=$('studentSignout');
  if(!b)return;
@@ -41,7 +57,7 @@ function showSignout(){
      const result=await client.signOut();
      if(result?.error)throw new Error(result.error.message||'Sign out failed');
      b.style.display='none';b.textContent='Log out';
-     sessionStorage.removeItem(tabSessionKey);
+     localStorage.removeItem(activityKey);
      window.acediauraClearCloudSession?.();
      $('authEmail').value='';$('authPassword').value='';inp.value='';
      gate?.classList.remove('closed');window.authMode('login');
@@ -70,12 +86,14 @@ window.authSubmit=async()=>{
 async function restoreSession(){
  if(!client)return;
  try{
-  // A newly opened tab requires login again. Refreshes retain tab-scoped permission.
-  if(sessionStorage.getItem(tabSessionKey)!=='active'){
+  const last=Number(localStorage.getItem(activityKey));
+  if(!last||Date.now()-last>=timeoutMs){
+    localStorage.removeItem(activityKey);
     try{await client.signOut()}catch{}
+    window.acediauraClearCloudSession?.();
     gate?.classList.remove('closed');
     const logout=$('studentSignout');if(logout)logout.style.display='none';
-    report('Welcome back. Please sign in to resume your saved progress.');
+    report('Please sign in to resume your saved progress.');
     return;
   }
   const result=await client.getSession();
@@ -87,7 +105,7 @@ async function restoreSession(){
     else report('Signed in, but cloud token unavailable. Please refresh or sign in again.');
    }catch(e){report('Signed in, but cloud syncing is unavailable.')}
   }else{
-   sessionStorage.removeItem(tabSessionKey);
+   localStorage.removeItem(activityKey);
    gate?.classList.remove('closed');
    const logout=$('studentSignout');if(logout)logout.style.display='none';
    if(result.error)report('Session could not be restored: '+result.error.message);
@@ -99,6 +117,15 @@ async function restoreSession(){
 }
 if(client){
  restoreSession();
- window.addEventListener('pageshow',event=>{if(event.persisted)restoreSession()});
+ window.addEventListener('pageshow',()=>{void expireIfIdle()});
+ document.addEventListener('visibilitychange',()=>{if(document.hidden)markActivity();else void expireIfIdle()});
+ window.addEventListener('focus',()=>{void expireIfIdle()});
+ for(const eventName of ['pointerdown','keydown','touchstart'])document.addEventListener(eventName,()=>{
+   if(!gate?.classList.contains('closed'))return;
+   const last=Number(localStorage.getItem(activityKey));
+   if(last&&Date.now()-last>=timeoutMs){void expireIfIdle();return}
+   if(!document.hidden)markActivity();
+ },{passive:true});
+ setInterval(()=>{if(!document.hidden)void expireIfIdle()},15000);
 
 }
