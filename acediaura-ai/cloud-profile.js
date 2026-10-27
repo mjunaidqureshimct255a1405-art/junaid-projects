@@ -4,6 +4,7 @@ const cloudStatus = (message) => {
   let node = document.getElementById('profileSaveStatus');
   if(!node && typeof tab!=='undefined' && tab==='profile'){const panel=document.getElementById('panel');if(panel){node=document.createElement('p');node.id='profileSaveStatus';node.className='notice';node.setAttribute('role','status');panel.appendChild(node)}}
   if(node) node.textContent = message;
+  const feedback=document.getElementById('cloudProfileFeedback');if(feedback)feedback.textContent=message;
 };
 async function fetchProfile() {
   if(!sessionToken) return;
@@ -49,7 +50,7 @@ window.acediauraSaveProfile=async()=>{
       body:JSON.stringify(payload)
     });
     const j=await r.json();
-    if(!r.ok){cloudStatus('Not saved: '+(j.error||'cloud error'));return}
+    if(!r.ok){cloudStatus('Not saved ('+r.status+'): '+(j.error||'cloud error'));return}
     data.profile={name:j.profile.full_name||'',bio:j.profile.about||'',cgpa:j.profile.cgpa??'',history:j.profile.sgpa_history||'',photo:j.profile.photo_data||''};
     render();
     const display=document.getElementById('bigName');if(display)display.textContent=data.profile.name||'Your name';
@@ -65,6 +66,10 @@ function attachCloudButton(){
  if(!profilePanel||typeof tab==='undefined'||tab!=='profile')return;
  const button=profilePanel.querySelector('button[onclick="saveProfile()"], button[onclick="window.acediauraSaveProfile()"]');
  if(button){button.setAttribute('onclick','window.acediauraSaveProfile()');button.textContent='Save profile to cloud';}
+ if(button&&!profilePanel.querySelector('#cloudProfileFeedback')){const note=document.createElement('p');note.id='cloudProfileFeedback';note.setAttribute('role','status');note.className='notice';note.textContent=sessionToken?'Edit details and save to cloud.':'Sign in to save your profile.';button.parentNode.insertAdjacentElement('afterend',note)}
+ const nameInput=profilePanel.querySelector('#name'),cgpaInput=profilePanel.querySelector('#cgpa');
+ if(nameInput&&!nameInput.dataset.livePreview){nameInput.dataset.livePreview='1';nameInput.addEventListener('input',()=>{const name=document.getElementById('bigName');if(name)name.textContent=nameInput.value.trim()||'Your name';const heading=document.getElementById('profileText');if(heading)heading.textContent=nameInput.value.trim()||'Your name, your academic story.';cloudStatus('Preview only — press Save profile to cloud to persist changes.')})}
+ if(cgpaInput&&!cgpaInput.dataset.livePreview){cgpaInput.dataset.livePreview='1';cgpaInput.addEventListener('input',()=>{const metric=document.querySelector('#profmetrics .profilemetric strong');if(metric)metric.textContent=cgpaInput.value||'—';cloudStatus('Preview only — press Save profile to cloud to persist changes.')})}
  let clear=profilePanel.querySelector('#clearCloudProfile');
  if(button&&!clear){clear=document.createElement('button');clear.id='clearCloudProfile';clear.type='button';clear.className='btn alt';clear.textContent='Clear profile';clear.onclick=async()=>{if(!confirm('Clear your saved name, CGPA, bio, SGPA history and photo?'))return;const fields=['name','cgpa','history','bio'];fields.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});data.profile.photo='';await window.acediauraSaveProfile()};button.insertAdjacentElement('afterend',clear)}
  const notice=profilePanel.querySelector('.notice');
