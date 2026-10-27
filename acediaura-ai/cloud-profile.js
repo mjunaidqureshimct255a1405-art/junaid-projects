@@ -25,7 +25,7 @@ window.acediauraSetCloudSession=async(token)=>{
 window.acediauraClearCloudSession=()=>{
   sessionToken=null; data=structuredClone(blank); render();
 };
-window.saveProfile=async()=>{
+window.acediauraSaveProfile=async()=>{
   if(!sessionToken){cloudStatus('Please log in to save your profile securely.');return}
   const name=document.getElementById('name'),bio=document.getElementById('bio');
   if(!name||!bio){cloudStatus('Open My Profile before saving.');return}
@@ -49,3 +49,17 @@ window.saveProfile=async()=>{
     render();cloudStatus('✓ Profile saved to Neon cloud.');
   }catch{cloudStatus('Cloud unavailable — profile was not saved.')}
 };
+// The legacy inline HTML reassigns saveProfile several times. Route the
+// rendered button directly to the cloud handler instead of that global.
+function attachCloudButton(){
+ const profilePanel=document.getElementById('panel');
+ if(!profilePanel||typeof tab==='undefined'||tab!=='profile')return;
+ const button=profilePanel.querySelector('button[onclick="saveProfile()"]');
+ if(button){button.setAttribute('onclick','window.acediauraSaveProfile()');button.textContent='Save profile to cloud';}
+ const notice=profilePanel.querySelector('.notice');
+ if(notice&&notice.textContent.includes('Demo-only'))notice.textContent='Save your profile securely to your student account.';
+}
+const cloudObserver=new MutationObserver(()=>attachCloudButton());
+const cloudPanel=document.getElementById('panel');
+if(cloudPanel)cloudObserver.observe(cloudPanel,{childList:true,subtree:false});
+attachCloudButton();
