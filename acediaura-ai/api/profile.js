@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       VALUES (${owner},${fullName},${college},${branch},${semester},${about},${cgpa},${sgpaHistory},${photo},NOW())
       ON CONFLICT (user_id) DO UPDATE SET full_name=EXCLUDED.full_name, college=EXCLUDED.college,
        branch=EXCLUDED.branch, current_semester=EXCLUDED.current_semester, about=EXCLUDED.about, cgpa=EXCLUDED.cgpa, sgpa_history=EXCLUDED.sgpa_history, photo_data=EXCLUDED.photo_data, updated_at=NOW()
-      RETURNING user_id, full_name, college, branch, current_semester, about, updated_at`;
+      RETURNING user_id, full_name, college, branch, current_semester, about, cgpa, sgpa_history, photo_data, updated_at`;
     return res.status(200).json({profile:rows[0]});
   } catch (error) {
     console.error('Profile API operation failed:', error?.code || 'internal');
