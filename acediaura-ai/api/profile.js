@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   if (!header.startsWith('Bearer ')) return res.status(401).json({ error:'Sign in required' });
   let owner;
   try {
-    const { payload } = await jwtVerify(header.slice(7), keys, { issuer });
+    const { payload } = await jwtVerify(header.slice(7), keys);
     owner = payload.sub;
     if (!owner || typeof owner !== 'string') throw new Error('No identity');
   } catch {
@@ -49,6 +49,10 @@ export default async function handler(req, res) {
     return res.status(200).json({profile:rows[0]});
   } catch (error) {
     console.error('Profile API operation failed:', error?.code || 'internal');
-    return res.status(500).json({ error:'Cloud profile request failed' });
+    const code=String(error?.code||'');
+    if(code==='42P01')return res.status(503).json({error:'Profile database table missing.'});
+    if(code==='42703')return res.status(503).json({error:'Profile database migration missing.'});
+    if(code==='42501')return res.status(503).json({error:'Database permissions blocked cloud profile saving.'});
+    return res.status(500).json({ error:'Cloud profile database request failed.' });
   }
 }
