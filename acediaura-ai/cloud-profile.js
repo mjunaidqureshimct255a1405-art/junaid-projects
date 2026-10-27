@@ -15,7 +15,7 @@ async function fetchProfile() {
       data.setup={...data.setup,college:j.profile.college||'',branch:j.profile.branch||'',sem:j.profile.current_semester||''};
       render();
       cloudStatus('Profile loaded from Neon cloud.');
-    }else{cloudStatus('No cloud profile yet. Complete your details and save.')}
+    }else{data.profile={};render();cloudStatus('No cloud profile yet. Complete your details and save.')}
   }catch{cloudStatus('Cloud connection unavailable. Profile not synced.')}
 }
 window.acediauraSetCloudSession=async(token)=>{
