@@ -88,5 +88,5 @@ async function restoreSession(){
 if(client){
  restoreSession();
  window.addEventListener('pageshow',event=>{if(event.persisted)restoreSession()});
- document.addEventListener('visibilitychange',()=>{if(!document.hidden)restoreSession()});
+
 }
