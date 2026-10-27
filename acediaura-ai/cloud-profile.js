@@ -19,8 +19,10 @@ async function fetchProfile() {
   }catch{cloudStatus('Cloud connection unavailable. Profile not synced.')}
 }
 window.acediauraSetCloudSession=async(token)=>{
-  sessionToken=typeof token==='string'&&token.length>50?token:null;
-  data.profile={}; data.setup={}; render();
+  const nextToken=typeof token==='string'&&token.split('.').length===3?token:null;
+  if(nextToken===sessionToken)return;
+  sessionToken=nextToken;
+  data.profile={}; render();
   if(sessionToken) await fetchProfile();
 };
 window.acediauraClearCloudSession=()=>{
@@ -48,7 +50,7 @@ window.acediauraSaveProfile=async()=>{
     const j=await r.json();
     if(!r.ok){cloudStatus('Not saved: '+(j.error||'cloud error'));return}
     data.profile={name:j.profile.full_name,bio:j.profile.about,cgpa:j.profile.cgpa??'',history:j.profile.sgpa_history||'',photo:j.profile.photo_data||''};
-    render();cloudStatus('✓ Profile saved to Neon cloud.');
+    render();cloudStatus('✓ Saved to Neon cloud. Reloading verified data…');await fetchProfile();
   }catch{cloudStatus('Cloud unavailable — profile was not saved.')}
 };
 // The legacy inline HTML reassigns saveProfile several times. Route the
