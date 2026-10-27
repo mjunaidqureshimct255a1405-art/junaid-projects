@@ -8,6 +8,7 @@ const gate=$('authGate'),status=$('authStatus');
 sessionStorage.removeItem('acediaura_demo_entered');
 gate?.classList.remove('closed');
 let client;
+const tabSessionKey='acediaura_active_tab_session';
 function report(message){if(status) status.textContent=message}
 if(authURL && /^https:\/\//.test(authURL)){client=createAuthClient(authURL)} else {report('Student accounts are not configured yet. You can explore the demo.')}
 const nameWrapper=document.createElement('label');
@@ -29,7 +30,7 @@ async function getCloudToken(){
   }
   return null;
 }
-function hideGate(){gate?.classList.add('closed');$('authPassword').value='';sessionStorage.removeItem('acediaura_demo_entered')}
+function hideGate(){sessionStorage.setItem(tabSessionKey,'active');gate?.classList.add('closed');$('authPassword').value='';sessionStorage.removeItem('acediaura_demo_entered')}
 function showSignout(){
  const b=$('studentSignout');
  if(!b)return;
@@ -40,6 +41,7 @@ function showSignout(){
      const result=await client.signOut();
      if(result?.error)throw new Error(result.error.message||'Sign out failed');
      b.style.display='none';b.textContent='Log out';
+     sessionStorage.removeItem(tabSessionKey);
      window.acediauraClearCloudSession?.();
      $('authEmail').value='';$('authPassword').value='';inp.value='';
      gate?.classList.remove('closed');window.authMode('login');
@@ -68,6 +70,14 @@ window.authSubmit=async()=>{
 async function restoreSession(){
  if(!client)return;
  try{
+  // A newly opened tab requires login again. Refreshes retain tab-scoped permission.
+  if(sessionStorage.getItem(tabSessionKey)!=='active'){
+    try{await client.signOut()}catch{}
+    gate?.classList.remove('closed');
+    const logout=$('studentSignout');if(logout)logout.style.display='none';
+    report('Welcome back. Please sign in to resume your saved progress.');
+    return;
+  }
   const result=await client.getSession();
   if(result.data?.user){
    hideGate();showSignout();
@@ -77,6 +87,7 @@ async function restoreSession(){
     else report('Signed in, but cloud token unavailable. Please refresh or sign in again.');
    }catch(e){report('Signed in, but cloud syncing is unavailable.')}
   }else{
+   sessionStorage.removeItem(tabSessionKey);
    gate?.classList.remove('closed');
    const logout=$('studentSignout');if(logout)logout.style.display='none';
    if(result.error)report('Session could not be restored: '+result.error.message);
