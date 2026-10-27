@@ -18,9 +18,9 @@ const previousMode=window.authMode;
 window.authMode=function(mode){previousMode?.(mode);nameWrapper.style.display=mode==='signup'?'flex':'none'};
 async function getCloudToken(){
   if(typeof client.token==='function'){
-    const response=await client.token();
+    try {const response=await client.token();
     const token=response?.data?.token||response?.token;
-    if(typeof token==='string'&&token.split('.').length===3)return token;
+    if(typeof token==='string'&&token.split('.').length===3)return token;}catch{}
   }
   if(typeof client.getJWTToken==='function'){
     const token=await client.getJWTToken();
