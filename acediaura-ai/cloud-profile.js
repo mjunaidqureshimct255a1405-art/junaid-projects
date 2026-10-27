@@ -1,7 +1,8 @@
 // Acediaura cloud profile client. Only cloud success is reported as saved.
 let sessionToken = null;
 const cloudStatus = (message) => {
-  const node = document.getElementById('profileSaveStatus');
+  let node = document.getElementById('profileSaveStatus');
+  if(!node && typeof tab!=='undefined' && tab==='profile'){const panel=document.getElementById('panel');if(panel){node=document.createElement('p');node.id='profileSaveStatus';node.className='notice';node.setAttribute('role','status');panel.appendChild(node)}}
   if(node) node.textContent = message;
 };
 async function fetchProfile() {
@@ -49,8 +50,12 @@ window.acediauraSaveProfile=async()=>{
     });
     const j=await r.json();
     if(!r.ok){cloudStatus('Not saved: '+(j.error||'cloud error'));return}
-    data.profile={name:j.profile.full_name,bio:j.profile.about,cgpa:j.profile.cgpa??'',history:j.profile.sgpa_history||'',photo:j.profile.photo_data||''};
-    render();cloudStatus('✓ Saved to Neon cloud. Reloading verified data…');await fetchProfile();
+    data.profile={name:j.profile.full_name||'',bio:j.profile.about||'',cgpa:j.profile.cgpa??'',history:j.profile.sgpa_history||'',photo:j.profile.photo_data||''};
+    render();
+    const display=document.getElementById('bigName');if(display)display.textContent=data.profile.name||'Your name';
+    const metric=document.querySelector('#profmetrics .profilemetric strong');if(metric)metric.textContent=data.profile.cgpa||'—';
+    cloudStatus('✓ Saved to Neon cloud. Checking saved data…');
+    await fetchProfile();
   }catch{cloudStatus('Cloud unavailable — profile was not saved.')}
 };
 // The legacy inline HTML reassigns saveProfile several times. Route the
@@ -58,7 +63,7 @@ window.acediauraSaveProfile=async()=>{
 function attachCloudButton(){
  const profilePanel=document.getElementById('panel');
  if(!profilePanel||typeof tab==='undefined'||tab!=='profile')return;
- const button=profilePanel.querySelector('button[onclick="saveProfile()"]');
+ const button=profilePanel.querySelector('button[onclick="saveProfile()"], button[onclick="window.acediauraSaveProfile()"]');
  if(button){button.setAttribute('onclick','window.acediauraSaveProfile()');button.textContent='Save profile to cloud';}
  let clear=profilePanel.querySelector('#clearCloudProfile');
  if(button&&!clear){clear=document.createElement('button');clear.id='clearCloudProfile';clear.type='button';clear.className='btn alt';clear.textContent='Clear profile';clear.onclick=async()=>{if(!confirm('Clear your saved name, CGPA, bio, SGPA history and photo?'))return;const fields=['name','cgpa','history','bio'];fields.forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});data.profile.photo='';await window.acediauraSaveProfile()};button.insertAdjacentElement('afterend',clear)}
