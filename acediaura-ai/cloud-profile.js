@@ -52,12 +52,12 @@ window.acediauraSaveProfile=async()=>{
       const r=await fetch('/api/profile',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tokenAtSave},body:JSON.stringify(payload)});
       const j=await r.json();
       if(!r.ok)throw Error('Cloud save failed ('+r.status+'): '+(j.error||'Unknown error'));
+      // Do not report success until the complete workspace has also been stored.
+      const workspaceSaved=tokenAtSave===sessionToken?await window.acediauraSaveWorkspace?.():false;
       if(tokenAtSave===sessionToken&&version===profileVersion){
-        cloudStatus('✓ Saved securely to cloud.');
+        cloudStatus(workspaceSaved?'✓ Profile and progress saved to cloud.':'Profile saved, but workspace sync failed. Check the workspace status.');
       }
-      // Keep a single source of truth for the academic workspace, too.
-      if(tokenAtSave===sessionToken)void window.acediauraSaveWorkspace?.();
-      return true;
+      return workspaceSaved===true;
     }catch(error){
       if(tokenAtSave===sessionToken&&version===profileVersion)cloudStatus('Displayed, but NOT cloud-saved: '+error.message);
       return false;
