@@ -1,4 +1,5 @@
 import './workspace-bridge.js';
+import './marks-planner.js';
 import './cloud-profile.js';
 import { createAuthClient } from '@neondatabase/auth';
 const authURL=import.meta.env.VITE_NEON_AUTH_URL;
