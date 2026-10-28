@@ -2,8 +2,8 @@
 let token=null, busy=false, pending=false, synced=false, inFlight=Promise.resolve(), recoveryMode=false;
 const status=(message)=>{
  let node=document.getElementById('workspaceCloudStatus');
- if(!node){node=document.createElement('div');node.id='workspaceCloudStatus';node.className='notice';node.setAttribute('role','status');const host=document.querySelector('#workspace .sectionHead');host?.appendChild(node);}
- if(node)node.textContent=message;
+ if(!node){node=document.createElement('div');node.id='workspaceCloudStatus';node.className='notice';node.setAttribute('role','status');const host=document.querySelector('#workspace .sectionHead')||document.querySelector('.hero')||document.querySelector('main')||document.body;host?.appendChild(node);}
+ if(node){node.textContent=message;node.style.cssText='display:block!important;position:relative;z-index:10;margin:12px 0;padding:12px;border-radius:12px;background:#e8f3ef;color:#184b40;font-size:13px';}
 };
 async function call(method,content){
  const response=await fetch('/api/workspace',{method,cache:'no-store',headers:{Authorization:'Bearer '+token,...(method==='PUT'?{'Content-Type':'application/json'}:{})},...(method==='PUT'?{body:JSON.stringify({workspace:content})}:{})});
