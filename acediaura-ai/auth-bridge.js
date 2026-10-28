@@ -86,7 +86,7 @@ window.authSubmit=async()=>{
   $('authPassword').value='';
   if(answer.error){report(answer.error.message||'Authentication was unsuccessful.');return}
   const session=await client.getSession();
-  if(session.data?.user){hideGate();showSignout();const jwt=await getCloudToken();await window.acediauraSetCloudSession?.(jwt);if(!jwt)report('Logged in. Profile cloud token unavailable.')}
+  if(session.data?.user){const jwt=await getCloudToken();if(!jwt){report('Cloud authentication token unavailable. Your records are not loaded. Sign in again; do not create a new profile.');return}hideGate();showSignout();await window.acediauraSetCloudSession?.(jwt)}
   else {report(signUp?'Account created. Please select Log in and sign in to activate your session.':'Login request completed, but no active session was found. Check email verification and browser cookie settings.'); if(signUp) window.authMode('login')}
  }catch(e){report('Could not sign in: '+(e.message||'network error'))}
 };
@@ -110,7 +110,7 @@ async function restoreSession(){
    try{
     const token=await getCloudToken();
     if(token) await window.acediauraSetCloudSession?.(token);
-    else report('Signed in, but cloud token unavailable. Please refresh or sign in again.');
+    else {gate?.classList.remove('closed');report('Cloud token unavailable: records cannot load. Please log in again. Do not recreate your profile.');}
    }catch(e){report('Signed in, but cloud syncing is unavailable.')}
   }else{
    localStorage.removeItem(activityKey);
