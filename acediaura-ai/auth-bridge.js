@@ -55,6 +55,13 @@ function showSignout(){
  b.onclick=async()=>{
    b.disabled=true;b.textContent='Signing out…';
    try{
+     report('Finishing cloud saves before logout…');
+     const profileOK=await window.acediauraFlushProfileSaves?.();
+     const workspaceOK=await window.acediauraFlushWorkspaceSaves?.();
+     if(profileOK===false||workspaceOK===false){
+       report('Some changes are not yet saved. Please retry logout after cloud sync completes.');
+       return;
+     }
      const result=await client.signOut();
      if(result?.error)throw new Error(result.error.message||'Sign out failed');
      b.style.display='none';b.textContent='Log out';
