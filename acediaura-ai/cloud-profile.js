@@ -19,14 +19,13 @@ async function fetchProfile() {
       data.setup={...data.setup,college:j.profile.college||'',branch:j.profile.branch||'',sem:j.profile.current_semester||''};
       render();
       cloudStatus('Profile loaded from Neon cloud.');
-    }else{data.profile={};render();cloudStatus('No cloud profile yet. Complete your details and save.')}
+    }else{cloudStatus('No separate profile record found. Keeping your saved workspace profile.');}
   }catch{cloudStatus('Cloud connection unavailable. Profile not synced.')}
 }
 window.acediauraSetCloudSession=async(token)=>{
   const nextToken=typeof token==='string'&&token.split('.').length===3?token:null;
   if(nextToken===sessionToken)return;
   sessionToken=nextToken;
-  data.profile={}; render();
   if(sessionToken){await window.acediauraRestoreWorkspace?.(sessionToken);await fetchProfile();}
 };
 window.acediauraClearCloudSession=()=>{
@@ -68,6 +67,7 @@ window.acediauraSaveProfile=async()=>{
   profileSaveQueue=profileSaveQueue.then(operation,operation);
   return profileSaveQueue;
 };
+window.acediauraFlushProfileSaves=()=>profileSaveQueue;
 // The legacy inline HTML reassigns saveProfile several times. Route the
 // rendered button directly to the cloud handler instead of that global.
 function attachCloudButton(){
