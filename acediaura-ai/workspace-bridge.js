@@ -55,3 +55,5 @@ window.acediauraFlushWorkspaceSaves=async()=>{
   }
   return synced&&!busy&&!pending;
 };
+
+window.acediauraIsRecoveryMode=()=>recoveryMode;
