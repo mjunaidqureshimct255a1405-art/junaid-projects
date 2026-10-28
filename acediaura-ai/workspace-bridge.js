@@ -16,14 +16,16 @@ window.acediauraRestoreWorkspace=async jwt=>{
  status('Loading your secure academic workspace…');
  try{
   const result=await call('GET');
-  if(result.workspace){
+  if(result.workspace && typeof result.workspace==='object' && Object.keys(result.workspace).length){
    const w=result.workspace;
    data={...structuredClone(blank),...w,profile:w.profile||{},setup:w.setup||{},subjects:Array.isArray(w.subjects)?w.subjects:[],topics:Array.isArray(w.topics)?w.topics:[],marks:Array.isArray(w.marks)?w.marks:[],sessions:Array.isArray(w.sessions)?w.sessions:[]};
   }else{
-   // New account: never silently import someone else's legacy device-local data.
-   data={...structuredClone(blank),profile:{}};
+   // Recovery safeguard: a missing record is NOT proof that previously saved data is expendable.
+   synced=false;
+   status('No cloud workspace was found for this account. Saving is locked to protect possible older records. Do not create replacement data.');
+   return;
   }
-  synced=true;render();status('Cloud workspace ready. All academic Save actions sync to your account.');
+  synced=true;render();status('Existing cloud workspace restored successfully.');
  }catch(e){status('Workspace not synced: '+e.message);synced=false;}
 };
 window.acediauraDisableWorkspace=()=>{token=null;synced=false;pending=false;status('Log in to sync your workspace.')};
