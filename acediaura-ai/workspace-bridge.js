@@ -51,5 +51,5 @@ window.acediauraFlushWorkspaceSaves=async()=>{
     if(!busy&&!pending)break;
     await new Promise(resolve=>setTimeout(resolve,60));
   }
-  return !busy&&!pending;
+  return synced&&!busy&&!pending;
 };
