@@ -21,7 +21,7 @@ window.acediauraRestoreWorkspace=async jwt=>{
    data={...structuredClone(blank),...w,profile:w.profile||{},setup:w.setup||{},subjects:Array.isArray(w.subjects)?w.subjects:[],topics:Array.isArray(w.topics)?w.topics:[],marks:Array.isArray(w.marks)?w.marks:[],sessions:Array.isArray(w.sessions)?w.sessions:[]};
   }else{
    // Recovery safeguard: a missing record is NOT proof that previously saved data is expendable.
-   synced=false;
+   synced=false;recoveryMode=true;
    status('No cloud workspace was found for this account. Saving is locked to protect possible older records. Do not create replacement data.');
    return;
   }
