@@ -1,5 +1,5 @@
 // Single cloud persistence path for academic workspace. Never silently pretend local storage is cloud.
-let token=null, busy=false, pending=false, synced=false;
+let token=null, busy=false, pending=false, synced=false, inFlight=Promise.resolve();
 const status=(message)=>{
  let node=document.getElementById('workspaceCloudStatus');
  if(!node){node=document.createElement('div');node.id='workspaceCloudStatus';node.className='notice';node.setAttribute('role','status');const host=document.querySelector('#workspace .sectionHead');host?.appendChild(node);}
@@ -18,7 +18,7 @@ window.acediauraRestoreWorkspace=async jwt=>{
   const result=await call('GET');
   if(result.workspace){
    const w=result.workspace;
-   data={...structuredClone(blank),...w,profile:data.profile||{},setup:w.setup||{},subjects:Array.isArray(w.subjects)?w.subjects:[],topics:Array.isArray(w.topics)?w.topics:[],marks:Array.isArray(w.marks)?w.marks:[],sessions:Array.isArray(w.sessions)?w.sessions:[]};
+   data={...structuredClone(blank),...w,profile:w.profile||{},setup:w.setup||{},subjects:Array.isArray(w.subjects)?w.subjects:[],topics:Array.isArray(w.topics)?w.topics:[],marks:Array.isArray(w.marks)?w.marks:[],sessions:Array.isArray(w.sessions)?w.sessions:[]};
   }else{
    // New account: never silently import someone else's legacy device-local data.
    data={...structuredClone(blank),profile:{}};
@@ -33,7 +33,8 @@ window.acediauraSaveWorkspace=async()=>{
  busy=true;
  try{
   const snapshot=structuredClone(data);
-  await call('PUT',snapshot);
+  inFlight=call('PUT',snapshot);
+  await inFlight;
   status('✓ Academic workspace saved to your cloud account.');
   return true;
  }catch(e){status('Not saved to cloud: '+e.message);return false}
@@ -41,4 +42,14 @@ window.acediauraSaveWorkspace=async()=>{
   busy=false;
   if(pending){pending=false;void window.acediauraSaveWorkspace()}
  }
+};
+
+window.acediauraFlushWorkspaceSaves=async()=>{
+  // Wait for the active write and any queued change, preserving its account identity.
+  for(let i=0;i<4;i++){
+    await inFlight.catch(()=>{});
+    if(!busy&&!pending)break;
+    await new Promise(resolve=>setTimeout(resolve,60));
+  }
+  return !busy&&!pending;
 };
