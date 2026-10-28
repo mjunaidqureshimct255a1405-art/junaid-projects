@@ -1,5 +1,5 @@
 // Single cloud persistence path for academic workspace. Never silently pretend local storage is cloud.
-let token=null, busy=false, pending=false, synced=false, inFlight=Promise.resolve();
+let token=null, busy=false, pending=false, synced=false, inFlight=Promise.resolve(), recoveryMode=false;
 const status=(message)=>{
  let node=document.getElementById('workspaceCloudStatus');
  if(!node){node=document.createElement('div');node.id='workspaceCloudStatus';node.className='notice';node.setAttribute('role','status');const host=document.querySelector('#workspace .sectionHead');host?.appendChild(node);}
@@ -12,7 +12,7 @@ async function call(method,content){
  return result;
 }
 window.acediauraRestoreWorkspace=async jwt=>{
- token=jwt;synced=false;
+ token=jwt;synced=false;recoveryMode=false;
  status('Loading your secure academic workspace…');
  try{
   const result=await call('GET');
@@ -26,11 +26,11 @@ window.acediauraRestoreWorkspace=async jwt=>{
    return;
   }
   synced=true;render();status('Existing cloud workspace restored successfully.');
- }catch(e){status('Workspace not synced: '+e.message);synced=false;}
+ }catch(e){status('READ-ONLY recovery: Cloud read failed: '+e.message+'. No records changed.');synced=false;recoveryMode=true;}
 };
-window.acediauraDisableWorkspace=()=>{token=null;synced=false;pending=false;status('Log in to sync your workspace.')};
+window.acediauraDisableWorkspace=()=>{token=null;synced=false;pending=false;recoveryMode=false;status('Log in to sync your workspace.')};
 window.acediauraSaveWorkspace=async()=>{
- if(!token||!synced){status('Not saved to cloud: '+(token?'cloud workspace unavailable':'please log in'));return false}
+ if(!token||!synced||recoveryMode){status('Cloud write blocked to protect existing records: '+(token?'workspace is not safely restored':'please log in'));return false}
  if(busy){pending=true;return false}
  busy=true;
  try{
