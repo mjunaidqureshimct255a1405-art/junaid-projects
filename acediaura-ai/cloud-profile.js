@@ -26,7 +26,12 @@ window.acediauraSetCloudSession=async(token)=>{
   const nextToken=typeof token==='string'&&token.split('.').length===3?token:null;
   if(nextToken===sessionToken)return;
   sessionToken=nextToken;
-  if(sessionToken){await window.acediauraRestoreWorkspace?.(sessionToken);await fetchProfile();}
+  if(sessionToken){
+    await window.acediauraRestoreWorkspace?.(sessionToken);
+    const restored=data.profile||{};
+    const hasSavedProfile=Object.values(restored).some(value=>value!==null&&value!==undefined&&String(value).trim()!=='');
+    if(!hasSavedProfile)await fetchProfile();
+  }
 };
 window.acediauraClearCloudSession=()=>{
   sessionToken=null;window.acediauraDisableWorkspace?.();data=structuredClone(blank); render();
