@@ -37,6 +37,7 @@ window.acediauraClearCloudSession=()=>{
   sessionToken=null;window.acediauraDisableWorkspace?.();data=structuredClone(blank); render();
 };
 window.acediauraSaveProfile=async()=>{
+  if(window.acediauraIsRecoveryMode?.()){cloudStatus('Recovery mode: saving disabled to protect previous records.');return false}
   const name=document.getElementById('name'),bio=document.getElementById('bio'),cgpa=document.getElementById('cgpa'),history=document.getElementById('history');
   if(!name||!bio){cloudStatus('Open My Profile before saving.');return false}
   const next={name:name.value.trim(),bio:bio.value.trim(),cgpa:cgpa?.value||'',history:history?.value||'',photo:data.profile.photo||''};
